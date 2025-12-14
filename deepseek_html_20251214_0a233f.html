@@ -3347,45 +3347,67 @@
         // ==================== SHOP DATA LOADING ====================
         
         async function loadShopData(userId) {
+    try {
+        showLoading(true);
+        
+        // Try to get shop by ownerId first
+        let shopSnapshot = await db.collection('shops')
+            .where('ownerId', '==', userId)
+            .limit(1)
+            .get();
+        
+        // If no shop found by ownerId, try by uid (for backward compatibility)
+        if (shopSnapshot.empty) {
+            shopSnapshot = await db.collection('shops')
+                .where('uid', '==', userId)
+                .limit(1)
+                .get();
+        }
+        
+        // If still no shop found, try direct document ID (shopId = userId)
+        if (shopSnapshot.empty) {
             try {
-                showLoading(true);
-                
-                // Load shop data
-                const shopSnapshot = await db.collection('shops')
-                    .where('ownerId', '==', userId)
-                    .limit(1)
-                    .get();
-                
-                if (!shopSnapshot.empty) {
-                    const shopDoc = shopSnapshot.docs[0];
+                const shopDoc = await db.collection('shops').doc(userId).get();
+                if (shopDoc.exists) {
                     currentShop = {
                         id: shopDoc.id,
                         ...shopDoc.data()
                     };
-                    
-                    console.log("Shop loaded:", currentShop.name);
-                    
-                    // Load initial data
-                    await loadProducts();
-                    await loadOrders();
-                    await loadRefunds();
-                    await loadDashboardData();
-                    
-                    showToast(`Welcome back, ${currentShop.name}!`, 'success');
-                } else {
-                    console.log("No shop found for user");
-                    showToast('No shop found for this account. Please contact admin.', 'error');
-                    await logout();
                 }
-                
             } catch (error) {
-                console.error("Error loading shop data:", error);
-                showToast('Error loading shop data', 'error');
-            } finally {
-                showLoading(false);
+                console.log("No shop found with direct ID either");
             }
+        } else {
+            const shopDoc = shopSnapshot.docs[0];
+            currentShop = {
+                id: shopDoc.id,
+                ...shopDoc.data()
+            };
         }
-
+        
+        if (currentShop) {
+            console.log("Shop loaded:", currentShop.name || currentShop.id);
+            
+            // Load initial data
+            await loadProducts();
+            await loadOrders();
+            await loadRefunds();
+            await loadDashboardData();
+            
+            showToast(`Welcome back, ${currentShop.name || 'Shopkeeper'}!`, 'success');
+        } else {
+            console.log("No shop found for user");
+            showToast('No shop found for this account. Please contact admin to create a shop.', 'error');
+            // Don't logout, let them see the interface but show message
+        }
+        
+    } catch (error) {
+        console.error("Error loading shop data:", error);
+        showToast('Error loading shop data: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
         // ==================== BASIC DATA LOADING FUNCTIONS ====================
         
         async function loadProducts() {
