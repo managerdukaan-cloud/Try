@@ -6052,73 +6052,73 @@
         
         // Load refunds function
         async function loadRefunds() {
-            if (!currentShop) return;
+    if (!currentShop) return;
+    
+    try {
+        showLoading(true);
+        
+        refunds = [];
+        
+        try {
+            const refundsSnapshot = await db.collection('refunds')
+                .where('shopId', '==', currentShop.id)
+                .orderBy('initiatedAt', 'desc')
+                .get();
+            
+            refundsSnapshot.forEach(doc => {
+                const refundData = doc.data();
+                refunds.push({ 
+                    id: doc.id, 
+                    ...refundData,
+                    shortId: 'REF-' + (refundData.refundId ? 
+                        refundData.refundId.substring(refundData.refundId.length - 6) : 
+                        doc.id.substring(doc.id.length - 6)).toUpperCase()
+                });
+            });
+        } catch (error) {
+            console.error('Error querying refunds:', error);
             
             try {
-                showLoading(true);
+                const refundsSnapshot = await db.collection('refunds')
+                    .where('shopId', '==', currentShop.id)
+                    .get();
                 
-                refunds = [];
+                refundsSnapshot.forEach(doc => {
+                    const refundData = doc.data();
+                    refunds.push({ 
+                        id: doc.id, 
+                        ...refundData,
+                        shortId: 'REF-' + (refundData.refundId ? 
+                            refundData.refundId.substring(refundData.refundId.length - 6) : 
+                            doc.id.substring(doc.id.length - 6)).toUpperCase()  // FIXED: Changed = to :
+                    });
+                });
                 
-                try {
-                    const refundsSnapshot = await db.collection('refunds')
-                        .where('shopId', '==', currentShop.id)
-                        .orderBy('initiatedAt', 'desc')
-                        .get();
-                    
-                    refundsSnapshot.forEach(doc => {
-                        const refundData = doc.data();
-                        refunds.push({ 
-                            id: doc.id, 
-                            ...refundData,
-                            shortId: 'REF-' + (refundData.refundId ? 
-                                refundData.refundId.substring(refundData.refundId.length - 6) : 
-                                doc.id.substring(doc.id.length - 6)).toUpperCase()
-                        });
-                    });
-                } catch (error) {
-                    console.error('Error querying refunds:', error);
-                    
-                    try {
-                        const refundsSnapshot = await db.collection('refunds')
-                            .where('shopId', '==', currentShop.id)
-                            .get();
-                        
-                        refundsSnapshot.forEach(doc => {
-                            const refundData = doc.data();
-                            refunds.push({ 
-                                id: doc.id, 
-                                ...refundData,
-                                shortId = 'REF-' + (refundData.refundId ? 
-                                    refundData.refundId.substring(refundData.refundId.length - 6) : 
-                                    doc.id.substring(doc.id.length - 6)).toUpperCase()
-                        });
-                    }
-                    
-                    refunds.sort((a, b) => {
-                        const dateA = a.initiatedAt ? (a.initiatedAt.toDate ? a.initiatedAt.toDate() : new Date(a.initiatedAt)) : new Date(0);
-                        const dateB = b.initiatedAt ? (b.initiatedAt.toDate ? b.initiatedAt.toDate() : new Date(b.initiatedAt)) : new Date(0);
-                        return dateB - dateA;
-                    });
-                    
-                } catch (secondError) {
-                    console.error('Alternative query also failed:', secondError);
-                }
+                refunds.sort((a, b) => {
+                    const dateA = a.initiatedAt ? (a.initiatedAt.toDate ? a.initiatedAt.toDate() : new Date(a.initiatedAt)) : new Date(0);
+                    const dateB = b.initiatedAt ? (b.initiatedAt.toDate ? b.initiatedAt.toDate() : new Date(b.initiatedAt)) : new Date(0);
+                    return dateB - dateA;
+                });
+                
+            } catch (secondError) {
+                console.error('Alternative query also failed:', secondError);
             }
-            
-            filterRefunds();
-            updateRefundStats();
-            await updateOrdersWithRefundInfo();
-            
-        } catch (error) {
-            console.error("Error loading refunds:", error);
-            showToast('Error loading refunds: ' + error.message, 'error');
-            refunds = [];
-            filteredRefunds = [];
-            renderRefunds();
-        } finally {
-            showLoading(false);
-        }
+        }  // ADDED: Missing closing brace for the outer catch block
+        
+        filterRefunds();
+        updateRefundStats();
+        await updateOrdersWithRefundInfo();
+        
+    } catch (error) {
+        console.error("Error loading refunds:", error);
+        showToast('Error loading refunds: ' + error.message, 'error');
+        refunds = [];
+        filteredRefunds = [];
+        renderRefunds();
+    } finally {
+        showLoading(false);
     }
+}
 
         // Update orders with refund info
         async function updateOrdersWithRefundInfo() {
