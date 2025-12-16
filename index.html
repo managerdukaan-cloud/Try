@@ -2481,10 +2481,10 @@
                         <div class="qr-code-content">
                             <h5>Scan to Pay</h5>
                             <div class="qr-image-container">
-                                <img id="dynamicQRCode" src="" alt="QR Code">
+                                <img id="dynamicQRCode" alt="QR Code">
                             </div>
                             <div class="upi-details">
-                                <strong>UPI ID:</strong> <span id="dynamicUpiId">shopkeeper@upi</span><br>
+                            <strong>UPI ID:</strong> <span id="dynamicUpiId"></span><br>
                                 <strong>Amount:</strong> <span id="qrAmount">₹0</span>
                             </div>
                             <div class="utr-input">
@@ -2669,7 +2669,6 @@ function loadShopConfig() {
                 console.log('Shop config updated:', SHOP_CONFIG);
 
                 // ✅ always update QR (UPI ya QR image dono cases)
-                updateQRCode();
                 updateCouponSection();
             });
 
@@ -4768,11 +4767,18 @@ Placed on: ${new Date(order.date).toLocaleDateString()}
         }
 
         // Bottom sheet
-        function openBottomSheet() {
-            if (cart.length === 0) {
-                showToast('Your cart is empty');
-                return;
-            }
+function openBottomSheet() {
+    if (cart.length === 0) {
+        showToast('Your cart is empty');
+        return;
+    }
+
+    document.getElementById('bsheet').classList.add('open');
+    document.getElementById('qrCodeSection').style.display = 'block';
+
+    setTimeout(updateQRCode, 50);
+}
+
             
             updateOrderSummary();
             document.getElementById('bsheet').classList.add('open');
