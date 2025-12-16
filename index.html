@@ -4800,21 +4800,25 @@ function openBottomSheet() {
         }
 
         // Payment methods
-        function selectPaymentMethod(method) {
-            selectedPaymentMethod = method;
-            
-            document.querySelectorAll('.payment-option').forEach(option => {
-                option.classList.remove('selected');
-                if (option.getAttribute('data-method') === method) {
-                    option.classList.add('selected');
-                }
-            });
-            
-            const qrCodeSection = document.getElementById('qrCodeSection');
-            if (qrCodeSection) {
-                qrCodeSection.style.display = method === 'qr' ? 'block' : 'none';
-            }
+function selectPaymentMethod(method) {
+    selectedPaymentMethod = method;
+    
+    document.querySelectorAll('.payment-option').forEach(option => {
+        option.classList.remove('selected');
+        if (option.getAttribute('data-method') === method) {
+            option.classList.add('selected');
         }
+    });
+    
+    const qrCodeSection = document.getElementById('qrCodeSection');
+    if (qrCodeSection) {
+        qrCodeSection.style.display = method === 'qr' ? 'block' : 'none';
+
+        if (method === 'qr') {
+            setTimeout(updateQRCode, 50);
+        }
+    }
+}
 
         // Coupon functions - UPDATED VERSION
         function updateCouponSection() {
