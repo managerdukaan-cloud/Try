@@ -3466,7 +3466,7 @@ async function loadOrderHistory() {
             }
             
             // Remove delivery charge
-            const total = subtotal - discount;
+            const total = Math.max(0, subtotal - discount);
             const orderTotal = document.getElementById('orderTotal');
             const qrAmount = document.getElementById('qrAmount');
             
@@ -3477,7 +3477,9 @@ async function loadOrderHistory() {
             if (SHOP_CONFIG && SHOP_CONFIG.upiId) {
                 const qrImage = document.getElementById('dynamicQRCode');
                 if (qrImage) {
-                    qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=${SHOP_CONFIG.upiId}&pn=Raashanmart&am=${total}&tn=Order%20Payment`;
+                qrImage.src = SHOP_CONFIG.qrCodeImage
+                    ? SHOP_CONFIG.qrCodeImage
+                    : `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=${SHOP_CONFIG.upiId}&pn=Raashanmart&am=${total}&tn=Order%20Payment`;
                 }
             }
             
