@@ -2659,20 +2659,15 @@ function loadShopConfig() {
                     console.log('Shop config updated:', SHOP_CONFIG);
 
                     // ✅ update only when UPI exists
-                    if (SHOP_CONFIG.upiId) {
                         updateQRCode();
                     }
                     updateCouponSection();
 
                 } else {
-                    SHOP_CONFIG = {
-                        upiId: 'shopkeeper@upi',
-                        couponsEnabled: false,
-                        multipleShopsAllowed: false,
-                        deliveryCharge: 0
-                    };
-                }
-            });
+    console.warn('shop_config/settings not found');
+    return; // ❌ default overwrite hata diya
+}
+
 
     } catch (error) {
         console.error('Error loading shop config:', error);
@@ -3486,6 +3481,8 @@ async function loadOrderHistory() {
             
             if (orderTotal) orderTotal.textContent = `₹${Math.max(0, total)}`;
             if (qrAmount) qrAmount.textContent = `₹${Math.max(0, total)}`;
+            updateQRCode(); // ✅ force re-render QR after amount + config both ready
+
             
             const placeOrderBtn = document.getElementById('placeOrderBtn');
             if (placeOrderBtn) {
