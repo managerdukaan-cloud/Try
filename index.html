@@ -2720,28 +2720,34 @@ function loadShopConfig() {
         function updateQRCode() {
     if (!SHOP_CONFIG) return;
 
-    if (SHOP_CONFIG.upiId) {
-        document.getElementById('dynamicUpiId').textContent = SHOP_CONFIG.upiId;
+    console.log('SHOP_CONFIG =>', SHOP_CONFIG);
+    console.log('QR FROM CONFIG =>', SHOP_CONFIG.qrCodeImage);
+
+    const upiText = document.getElementById('dynamicUpiId');
+    const qrImage = document.getElementById('dynamicQRCode');
+    const qrAmountEl = document.getElementById('qrAmount');
+
+    if (upiText && SHOP_CONFIG.upiId) {
+        upiText.textContent = SHOP_CONFIG.upiId;
     }
 
-    const qrImage = document.getElementById('dynamicQRCode');
     if (!qrImage) return;
 
-    // ✅ Uploaded QR (cache-buster added)
-    if (SHOP_CONFIG.qrCodeImage) {
+    // ✅ FIRST PRIORITY: Uploaded QR from Cloudinary
+    if (SHOP_CONFIG.qrCodeImage && SHOP_CONFIG.qrCodeImage.startsWith('http')) {
         qrImage.src = SHOP_CONFIG.qrCodeImage + '?t=' + Date.now();
         return;
     }
 
-    // fallback dynamic QR
-    if (SHOP_CONFIG.upiId) {
-        const amount = document.getElementById('qrAmount').textContent.replace('₹', '');
+    // 🔁 FALLBACK: Dynamic UPI QR
+    if (SHOP_CONFIG.upiId && qrAmountEl) {
+        const amount = qrAmountEl.textContent.replace('₹', '').trim() || '0';
+
         qrImage.src =
             `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=` +
             `upi://pay?pa=${SHOP_CONFIG.upiId}&pn=Raashanmart&am=${amount}&tn=Order%20Payment`;
     }
 }
-
         const AVAILABLE_COUPONS = [
             { code: "WELCOME10", type: "percentage", value: 10, minOrder: 500, description: "Get 10% OFF on orders above ₹500" },
             { code: "FLAT50", type: "fixed", value: 50, minOrder: 300, description: "Get ₹50 OFF on orders above ₹300" }
