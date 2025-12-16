@@ -2728,13 +2728,13 @@ function loadShopConfig() {
     const qrImage = document.getElementById('dynamicQRCode');
     if (!qrImage) return;
 
-    // ✅ PRIORITY: Uploaded QR from shopkeeper
+    // ✅ Uploaded QR (cache-buster added)
     if (SHOP_CONFIG.qrCodeImage) {
-        qrImage.src = SHOP_CONFIG.qrCodeImage;
+        qrImage.src = SHOP_CONFIG.qrCodeImage + '?t=' + Date.now();
         return;
     }
 
-    // 🔁 Fallback: Dynamic UPI QR
+    // fallback dynamic QR
     if (SHOP_CONFIG.upiId) {
         const amount = document.getElementById('qrAmount').textContent.replace('₹', '');
         qrImage.src =
