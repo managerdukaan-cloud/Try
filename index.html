@@ -3454,33 +3454,49 @@ async function loadAndListenToShop() {
 // ==================== UPDATE PAYMENT UI FUNCTION ====================
 // Function to update the Payment/UPI section in the UI
 function updatePaymentSectionUI(shopData) {
-    // 1. Update UPI ID Text if element exists
-    const upiIdElement = document.getElementById('displayUpiId');
+    console.log("🔄 Updating payment UI with:", shopData);
+    
+    // 1. Update UPI ID Text if element exists - USE YOUR EXISTING ID
+    const upiIdElement = document.getElementById('dynamicUpiId');
     if (upiIdElement && shopData.upiId) {
-        upiIdElement.textContent = `UPI ID: ${shopData.upiId}`;
-        upiIdElement.style.display = 'block';
+        upiIdElement.textContent = shopData.upiId;
+        console.log("✅ UPI ID updated:", shopData.upiId);
     }
 
-    // 2. Update QR Code Image if element exists
-    const qrCodeImgElement = document.getElementById('qrCodeImage');
+    // 2. Update QR Code Image if element exists - USE YOUR EXISTING ID
+    const qrCodeImgElement = document.getElementById('dynamicQRCode');
     if (qrCodeImgElement && shopData.qrCodeImage) {
         qrCodeImgElement.src = shopData.qrCodeImage;
-        qrCodeImgElement.style.display = 'block';
         qrCodeImgElement.alt = "Scan to pay via UPI";
+        console.log("✅ QR Code updated");
     }
 
-    // 3. Show/Hide UPI Payment Option based on shop settings
-    const upiPaymentOption = document.getElementById('upiPaymentOption');
-    const upiPaymentLabel = document.querySelector('label[for="upiPaymentOption"]');
+    // 3. Show/Hide UPI Payment Option based on shop settings - USE DATA ATTRIBUTE
+    const upiPaymentOption = document.querySelector('[data-method="qr"]');
     if (upiPaymentOption && shopData.paymentMethods) {
         if (shopData.paymentMethods.upi) {
-            upiPaymentOption.style.display = 'block';
-            if (upiPaymentLabel) upiPaymentLabel.style.display = 'block';
+            upiPaymentOption.style.display = 'flex';
+            console.log("✅ UPI option shown");
         } else {
             upiPaymentOption.style.display = 'none';
-            if (upiPaymentLabel) upiPaymentLabel.style.display = 'none';
+            console.log("❌ UPI option hidden");
         }
     }
+
+    // 4. Show/Hide Cash on Delivery Option - USE DATA ATTRIBUTE
+    const codPaymentOption = document.querySelector('[data-method="cod"]');
+    if (codPaymentOption && shopData.paymentMethods) {
+        if (shopData.paymentMethods.cash) {
+            codPaymentOption.style.display = 'flex';
+            console.log("✅ COD option shown");
+        } else {
+            codPaymentOption.style.display = 'none';
+            console.log("❌ COD option hidden");
+        }
+    }
+    
+    console.log("🎯 Payment UI update complete!");
+}
 
     // 4. Show/Hide Cash on Delivery Option
     const codPaymentOption = document.getElementById('codPaymentOption');
