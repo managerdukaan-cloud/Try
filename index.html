@@ -2460,42 +2460,55 @@
                     </div>
                 </div>
                 <div class="payment-methods">
-                    <h5>Payment Method</h5>
-                    <div class="payment-option" data-method="cod">
-                        <div class="payment-icon"><i class="fas fa-money-bill-wave"></i></div>
-                        <div class="payment-info">
-                            <div class="payment-title">Cash on Delivery</div>
-                            <div class="payment-desc">Pay when you receive your order</div>
-                        </div>
-                    </div>
-                    <div class="payment-option" data-method="qr">
-                        <div class="payment-icon"><i class="fas fa-qrcode"></i></div>
-                        <div class="payment-info">
-                            <div class="payment-title">QR Code Payment</div>
-                            <div class="payment-desc">Scan and pay via UPI</div>
-                        </div>
-                    </div>
-                </div>
-                <div id="qrCodeSection" class="qr-modal" style="display: none;">
-                    <div class="qr-code">
-                        <div class="qr-code-content">
-                            <h5>Scan to Pay</h5>
-                            <div class="qr-image-container">
-                                <img id="dynamicQRCode" alt="QR Code">
-                            </div>
-                            <div class="upi-details">
-                            <strong>UPI ID:</strong> <span id="dynamicUpiId"></span><br>
-                                <strong>Amount:</strong> <span id="qrAmount">₹0</span>
-                            </div>
-                            <div class="utr-input">
-                                <label class="form-label">Enter UTR Number</label>
-                                <input type="text" class="form-control" id="utrNumber" placeholder="Enter 12-digit UTR number" oninput="validateUTR()">
-                                <small id="utrValidation" class="validation-message"></small>
-                            </div>
-                            <button id="confirmQrPayment" class="btn-primary w-100">Confirm QR Payment</button>
-                        </div>
-                    </div>
-                </div>
+    <h5>Payment Method</h5>
+    
+    <!-- Cash on Delivery Option - ADD ID HERE -->
+    <div class="payment-option" id="codPaymentOption" data-method="cod">
+        <div class="payment-icon"><i class="fas fa-money-bill-wave"></i></div>
+        <div class="payment-info">
+            <div class="payment-title">Cash on Delivery</div>
+            <div class="payment-desc">Pay when you receive your order</div>
+        </div>
+        <!-- ADD RADIO BUTTON -->
+        <input type="radio" id="paymentMethodCod" name="paymentMethod" value="cod" style="margin-left: auto;">
+    </div>
+    
+    <!-- QR Code Payment Option - ADD ID HERE -->
+    <div class="payment-option" id="upiPaymentOption" data-method="qr">
+        <div class="payment-icon"><i class="fas fa-qrcode"></i></div>
+        <div class="payment-info">
+            <div class="payment-title">QR Code Payment</div>
+            <div class="payment-desc">Scan and pay via UPI</div>
+        </div>
+        <!-- ADD RADIO BUTTON -->
+        <input type="radio" id="paymentMethodUpi" name="paymentMethod" value="upi" style="margin-left: auto;">
+    </div>
+</div>
+
+<!-- QR Code Section - ADD ID HERE for upiDetailsSection -->
+<div id="qrCodeSection" class="qr-modal" style="display: none;">
+    <div class="qr-code">
+        <div class="qr-code-content">
+            <h5>Scan to Pay</h5>
+            <div class="qr-image-container">
+                <!-- CHANGE ID HERE -->
+                <img id="qrCodeImage" alt="QR Code">
+            </div>
+            <div class="upi-details">
+                <strong>UPI ID:</strong> 
+                <!-- CHANGE ID HERE -->
+                <span id="displayUpiId"></span><br>
+                <strong>Amount:</strong> <span id="qrAmount">₹0</span>
+            </div>
+            <div class="utr-input">
+                <label class="form-label">Enter UTR Number</label>
+                <input type="text" class="form-control" id="utrNumber" placeholder="Enter 12-digit UTR number" oninput="validateUTR()">
+                <small id="utrValidation" class="validation-message"></small>
+            </div>
+            <button id="confirmQrPayment" class="btn-primary w-100">Confirm QR Payment</button>
+        </div>
+    </div>
+</div>
                 <button id="placeOrderBtn" class="btn-primary w-100 mt-3" onclick="placeOrder()" disabled>
                     <i class="fas fa-lock"></i> Place Order Securely
                 </button>
@@ -3485,15 +3498,35 @@ function updatePaymentSectionUI(shopData) {
 
 // ==================== SETUP PAYMENT SELECTION ====================
 // Function to show UPI details when UPI option is selected
+// Function to show UPI details when UPI option is selected
 function setupPaymentSelection() {
     const upiRadio = document.getElementById('paymentMethodUpi');
-    const upiDetailsSection = document.getElementById('upiDetailsSection');
+    const upiDetailsSection = document.getElementById('qrCodeSection'); // CHANGED HERE
     
     if (upiRadio && upiDetailsSection) {
         upiRadio.addEventListener('change', function() {
             if (this.checked) {
                 // Show the UPI details section
-                upiDetailsSection.style.display = 'block';
+                upiDetailsSection.style.display = 'block'; // CHANGED HERE
+                
+                // Ensure data is populated from currentShopData
+                if (currentShopData) {
+                    updatePaymentSectionUI(currentShopData);
+                }
+            }
+        });
+    }
+    
+    // Hide UPI details if other method is selected
+    const codRadio = document.getElementById('paymentMethodCod');
+    if (codRadio && upiDetailsSection) {
+        codRadio.addEventListener('change', function() {
+            if (this.checked) {
+                upiDetailsSection.style.display = 'none'; // CHANGED HERE
+            }
+        });
+    }
+}
                 
                 // Ensure data is populated from currentShopData
                 if (currentShopData) {
