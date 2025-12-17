@@ -3139,28 +3139,34 @@ function forceRefreshPaymentUI() {
         // ==================== REST OF THE CODE (UNCHANGED) ====================
         // Load shop data including coupon settings
         async function loadShopData() {
-            try {
-                // Get shop ID from products (if available)
-                let shopId = 'default_shop';
-                if (cart.length > 0) {
-                    shopId = cart[0].shopId;
-                } else if (PRODUCTS.length > 0) {
-                    shopId = PRODUCTS[0].shopId;
-                }
-                
-                const shopDoc = await db.collection('shops').doc(shopId).get();
-                if (shopDoc.exists) {
-                    SHOP_DATA = shopDoc.data();
-                    console.log('✅ Shop data loaded:', SHOP_DATA);
-                    
-                    // Update coupon section based on shop data
-                    updateCouponSection();
-                }
-            } catch (error) {
-                console.error('Error loading shop data:', error);
-                SHOP_DATA = null;
-            }
+    try {
+        // Get shop ID from products (if available)
+        let shopId = 'default_shop';
+        if (cart.length > 0) {
+            shopId = cart[0].shopId;
+        } else if (PRODUCTS.length > 0) {
+            shopId = PRODUCTS[0].shopId;
         }
+        
+        const shopDoc = await db.collection('shops').doc(shopId).get();
+        if (shopDoc.exists) {
+            SHOP_DATA = shopDoc.data();
+            console.log('✅ Shop data loaded:', SHOP_DATA);
+            
+            // 🔥🔥🔥 CRITICAL FIX: Also update SHOP_CONFIG
+            if (SHOP_DATA) {
+                SHOP_CONFIG = SHOP_DATA;
+                console.log('💾 SHOP_CONFIG updated from SHOP_DATA');
+            }
+            
+            // Update coupon section based on shop data
+            updateCouponSection();
+        }
+    } catch (error) {
+        console.error('Error loading shop data:', error);
+        SHOP_DATA = null;
+    }
+}
 
         // Load shop coupons
         async function loadShopCoupons() {
