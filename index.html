@@ -3514,17 +3514,23 @@ function setupPaymentSelection() {
     }
 }
         // Update cart UI
-        function updateCartUI() {
-            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-            const bottomCartCount = document.getElementById('bottomCartCount');
-            
-            if (bottomCartCount) {
-                bottomCartCount.textContent = totalItems;
-                bottomCartCount.style.display = totalItems > 0 ? 'block' : 'none';
-            }
-            
-            updateOrderSummary();
-        }
+function updateCartUI() {
+    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+    const bottomCartCount = document.getElementById('bottomCartCount');
+    
+    if (bottomCartCount) {
+        bottomCartCount.textContent = totalItems;
+        bottomCartCount.style.display = totalItems > 0 ? 'block' : 'none';
+    }
+    
+    updateOrderSummary();
+    
+    // ======== ADD THESE LINES ========
+    // Load shop data when cart has items and we don't have shop data yet
+    if (cart.length > 0 && !currentShopData) {
+        loadAndListenToShop();
+    }
+}
 
         // Update order summary in cart
         function updateOrderSummary() {
@@ -5581,9 +5587,12 @@ function selectPaymentMethod(method) {
         }
 
         // Start app when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            initApp();
-        });
+document.addEventListener('DOMContentLoaded', function() {
+    initApp();
+    
+    // ======== ADD THIS LINE ========
+    setupPaymentSelection();
+});
     </script>
 </body>
 </html>
