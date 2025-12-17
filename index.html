@@ -3397,6 +3397,38 @@ async function loadOrderHistory() {
             }
         }
 
+        // ==================== SHOP DATA & UPI REAL-TIME SYNC ====================
+let currentShopData = null; // Global variable to store shop info
+
+// Function to load and listen for shop updates (Call this on page load)
+async function loadAndListenToShop() {
+    // IMPORTANT: Get the current shop ID. You need to set this from your app's logic.
+    // For example, if user selects a shop or there's only one shop:
+    const shopId = 'YOUR_CURRENT_SHOP_ID_HERE'; // REPLACE THIS WITH ACTUAL SHOP ID LOGIC
+
+    if (!shopId) {
+        console.error("Shop ID not found. Cannot load shop data.");
+        return;
+    }
+
+    const shopRef = firebase.firestore().collection('shops').doc(shopId);
+
+    // Listen for real-time updates
+    shopRef.onSnapshot((docSnapshot) => {
+        if (docSnapshot.exists) {
+            currentShopData = docSnapshot.data();
+            console.log("Shop data updated (Real-time):", currentShopData);
+            
+            // Update the UI with new shop/UPI data
+            updatePaymentSectionUI(currentShopData);
+        } else {
+            console.log("No such shop document!");
+        }
+    }, (error) => {
+        console.error("Error listening to shop updates:", error);
+    });
+}
+
         // Update cart UI
         function updateCartUI() {
             const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
