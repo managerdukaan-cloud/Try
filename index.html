@@ -2657,34 +2657,43 @@
 
         let shopConfigUnsubscribe = null;
 
-// ==================== SHOP CONFIG LISTENER ====================
-let shopConfigUnsubscribe = null; // ADD THIS LINE
+/// ==================== SHOP CONFIG LISTENER ====================
+let shopConfigUnsubscribe = null;
 
-        // Load shop configuration from Firebase (REAL-TIME + NO STALE DATA)
+// Load shop configuration from Firebase (REAL-TIME + NO STALE DATA)
 function loadShopConfig() {
     try {
-        // ❌ prevent multiple listeners
-        if (shopConfigUnsubscribe) return;
+        console.log("🚀 Starting shop config listener...");
+        
+        // Unsubscribe existing listener if any
+        if (shopConfigUnsubscribe) {
+            console.log("🔄 Unsubscribing old listener...");
+            shopConfigUnsubscribe();
+            shopConfigUnsubscribe = null;
+        }
 
         shopConfigUnsubscribe = db
             .collection('shop_config')
             .doc('settings')
             .onSnapshot(doc => {
-
+                console.log("📡 Real-time update received!");
+                
                 if (!doc.exists) {
                     console.warn('shop_config/settings not found');
-                    return; // ❌ default overwrite hata diya
+                    return;
                 }
 
-                // ✅ merge config (important for qrCodeImage)
+                const newData = doc.data();
+                console.log("New data from Firestore:", newData);
+                
+                // ✅ merge config
                 SHOP_CONFIG = {
                     ...SHOP_CONFIG,
-                    ...doc.data()
+                    ...newData
                 };
 
-                console.log('Shop config updated:', SHOP_CONFIG);
+                console.log('✅ Shop config updated:', SHOP_CONFIG);
 
-                // ======== ADD THESE LINES ========
                 // Update UPI and QR Code in checkout page
                 const upiElement = document.getElementById('dynamicUpiId');
                 const qrElement = document.getElementById('dynamicQRCode');
@@ -2697,14 +2706,17 @@ function loadShopConfig() {
                     qrElement.src = SHOP_CONFIG.qrCodeImage;
                     console.log("✅ QR Code updated in UI");
                 }
-                // ======== END ADD ========
 
                 // ✅ always update QR (UPI ya QR image dono cases)
                 updateCouponSection();
+            }, error => {
+                console.error('❌ onSnapshot error:', error);
             });
+            
+        console.log("✅ Listener started successfully!");
 
     } catch (error) {
-        console.error('Error loading shop config:', error);
+        console.error('Error in loadShopConfig:', error);
     }
 }
         // Load shop data including coupon settings
