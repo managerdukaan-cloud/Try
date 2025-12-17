@@ -2693,34 +2693,34 @@
     const shopConfigRef = db.collection('shop_config').doc(shopIdFromCart);
     
     currentShopListener = shopConfigRef.onSnapshot(
-        (doc) => {
-            console.log("📡 Real-time shop config update received for:", shopIdFromCart);
+    (doc) => {
+        console.log("📡 Real-time shop config update received for:", shopIdFromCart);
+        
+        if (doc.exists) {
+            const shopData = doc.data();
+            console.log("📡 REAL-TIME SHOP DATA:", shopData);
+            console.log("🔍 All fields:", Object.keys(shopData));
             
-            if (doc.exists) {
-                const shopData = doc.data();
-                console.log("📡 REAL-TIME SHOP DATA:", shopData);
-                console.log("🔍 All fields:", Object.keys(shopData));
-                
-                if (shopData.upiSettings) {
-                    console.log("🔍 upiSettings:", shopData.upiSettings);
-                }
-                
-                SHOP_CONFIG = shopData;
-                updatePaymentSectionUI(shopData);
-                loadShopData();
-            } else {
-                console.log("⚠️ No config found for shop:", shopIdFromCart);
-                SHOP_CONFIG = null;
-                
-                // Fallback: Try to get from shops collection
-                loadShopDataForPayment(shopIdFromCart);
+            if (shopData.upiSettings) {
+                console.log("🔍 upiSettings:", shopData.upiSettings);
             }
-        },
-        (error) => {
-            console.error("❌ Error listening to shop config:", error);
+            
+            SHOP_CONFIG = shopData;
+            updatePaymentSectionUI(shopData);
+            loadShopData();
+        } else {
+            console.log("⚠️ No config found for shop:", shopIdFromCart);
             SHOP_CONFIG = null;
+            
+            // Fallback: Try to get from shops collection
+            loadShopDataForPayment(shopIdFromCart);
         }
-    );
+    },
+    (error) => {
+        console.error("❌ Error listening to shop config:", error);
+        SHOP_CONFIG = null;
+    }
+);
 
     // Also load shop data for coupons and other info
     loadShopData();
