@@ -2066,6 +2066,11 @@
     </style>
 </head>
 <body>
+
+    <div id="shopClosedBanner" style="display:none;background:#fee2e2;color:#991b1b;padding:10px;text-align:center;position:sticky;top:0;z-index:9999;">
+  🚫 Shop is currently closed. Orders are not being accepted.
+</div>
+
     <!-- Exit Confirmation Dialog for Mobile Back Button -->
     <div id="exitDialog" class="exit-dialog">
         <div class="exit-dialog-content">
@@ -3790,6 +3795,11 @@
                 if (shopDoc.exists) {
                     SHOP_DATA = shopDoc.data();
                     console.log('✅ Shop data loaded:', SHOP_DATA);
+                    const banner = document.getElementById('shopClosedBanner');
+                    if (banner) {
+                        banner.style.display = (SHOP_DATA && SHOP_DATA.status !== 'active') ? 'block' : 'none';
+                    }
+
                     
                     if (SHOP_DATA) {
                         SHOP_CONFIG = SHOP_DATA;
