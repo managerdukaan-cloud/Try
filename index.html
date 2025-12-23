@@ -3232,8 +3232,8 @@
 // Updated placeOrder function with proper null checks
 async function placeOrder() {
 
-    if (SHOP_DATA && SHOP_DATA.status !== 'active') {
-        showToast('Shop is closed. Orders are not being accepted.');
+    if (SHOP_DATA && String(SHOP_DATA.status).toLowerCase() !== 'active') {
+    showToast('Shop is closed. Orders are not being accepted.');
         return;
     }
 
