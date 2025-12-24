@@ -2936,6 +2936,50 @@
         let SHOP_STATUS = null; // NEW: Store shop status
         let shopStatusListener = null; // NEW: Listener for shop status
 
+        // ==================== UPDATED: Add to Cart function with shop status check ====================
+function addToCart(productId) {
+    // Check if the shop is accepting orders
+    if (!isShopAcceptingOrders(productId)) {
+        showShopStatusNotification(SHOP_STATUS);
+        showToast('Cannot add to cart. Shop is currently ' + SHOP_STATUS + '.', 'error');
+        return;
+    }
+    
+    const product = PRODUCTS.find(p => p.id === productId);
+    if (!product) return;
+    
+    // Check stock
+    if (product.stock <= 0) {
+        showToast('Product is out of stock', 'error');
+        return;
+    }
+    
+    const existingItem = cart.find(item => item.id === productId);
+    
+    if (existingItem) {
+        if (existingItem.quantity >= 10) {
+            showToast('Maximum 10 items allowed');
+            return;
+        }
+        existingItem.quantity += 1;
+        showToast('Quantity increased');
+    } else {
+        cart.push({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            shopId: product.shopId,
+            shopName: product.shopName || 'Unknown Shop',
+            quantity: 1
+        });
+        showToast('Added to cart');
+    }
+    
+    localStorage.setItem('dukaan_cart', JSON.stringify(cart));
+    updateCartUI();
+    updateProductCardButton(productId);
+}
+
         // ==================== UPDATED: SHOP STATUS FUNCTIONS ====================
 // Har product ke liye alag shop status check karega
 async function checkShopStatusForProduct(productId) {
