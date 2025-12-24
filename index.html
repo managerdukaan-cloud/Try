@@ -6747,208 +6747,210 @@ function updatePaymentSectionUI(shopData) {
         
         // In updatePaymentSectionUI() function, where you create the payment options:
 if (upiEnabled) {
-            upiOption.style.display = 'flex';
-            upiOption.style.opacity = '1';
-            upiOption.style.cursor = 'pointer';
-            upiOption.innerHTML = `
-                <div class="payment-icon"><i class="fas fa-qrcode"></i></div>
-                <div class="payment-info">
-                    <div class="payment-title">QR Code Payment</div>
-                    <div class="payment-desc">Scan and pay via UPI</div>
-                </div>
-                <input type="radio" id="paymentMethodUpi" name="paymentMethod" value="upi" style="margin-left: auto;">
-            `;
+    // UPI is enabled
+    upiOption.style.display = 'flex';
+    upiOption.style.opacity = '1';
+    upiOption.style.cursor = 'pointer';
+    upiOption.innerHTML = `
+        <div class="payment-icon"><i class="fas fa-qrcode"></i></div>
+        <div class="payment-info">
+            <div class="payment-title">QR Code Payment</div>
+            <div class="payment-desc">Scan QR code to pay instantly</div>
+        </div>
+        <input type="radio" id="paymentMethodUpi" name="paymentMethod" value="upi" style="margin-left: auto;">
+    `;
     
     // Add click handler to prevent selection if disabled
-upiOption.onclick = function(e) {
-    if (!upiEnabled) {
+    upiOption.onclick = function(e) {
+        if (!upiEnabled) {
+            e.preventDefault();
+            showToast('This payment method is temporarily unavailable', 'warning');
+        }
+    };
+} else {
+    // UPI is disabled
+    upiOption.style.display = 'flex';
+    upiOption.style.opacity = '0.5';
+    upiOption.style.cursor = 'not-allowed';
+    upiOption.innerHTML = `
+        <div class="payment-icon"><i class="fas fa-qrcode"></i></div>
+        <div class="payment-info">
+            <div class="payment-title" style="color: #999;">QR Code Payment</div>
+            <div class="payment-desc" style="color: #FF6B6B;">This payment method is temporarily unavailable</div>
+        </div>
+        <input type="radio" id="paymentMethodUpi" name="paymentMethod" value="upi" style="margin-left: auto;" disabled>
+    `;
+    
+    // Prevent any clicks on disabled option
+    upiOption.onclick = function(e) {
         e.preventDefault();
         showToast('This payment method is temporarily unavailable', 'warning');
-    }
-};
-} else {
-upiOption.style.display = 'flex';
-upiOption.style.opacity = '0.5';
-upiOption.style.cursor = 'not-allowed';
-upiOption.innerHTML = `
-    <div class="payment-icon"><i class="fas fa-qrcode"></i></div>
-    <div class="payment-info">
-        <div class="payment-title" style="color: #999;">QR Code Payment</div>
-        <div class="payment-desc" style="color: #FF6B6B;">This payment method is temporarily unavailable</div>
-    </div>
-    <input type="radio" id="paymentMethodUpi" name="paymentMethod" value="upi" style="margin-left: auto;" disabled>
-`;
-
-// Prevent any clicks on disabled option
-upiOption.onclick = function(e) {
-    e.preventDefault();
-    showToast('This payment method is temporarily unavailable', 'warning');
-};
+    };
 }
 
 if (codOption) {
-let codEnabled = true;
-if (shopData.paymentMethods) {
-    codEnabled = shopData.paymentMethods.cash !== false;
-} 
-else if (shopData.upiSettings && shopData.upiSettings.acceptedMethods) {
-    codEnabled = shopData.upiSettings.acceptedMethods.cash !== false;
-}
-else if (shopData.settings && shopData.settings.paymentMethods) {
-    codEnabled = shopData.settings.paymentMethods.cash !== false;
-}
-
-if (codEnabled) {
-    codOption.style.display = 'flex';
-    codOption.style.opacity = '1';
-    codOption.style.cursor = 'pointer';
-    codOption.innerHTML = `
-        <div class="payment-icon"><i class="fas fa-money-bill-wave"></i></div>
-        <div class="payment-info">
-            <div class="payment-title">Cash on Delivery</div>
-            <div class="payment-desc">Pay when you receive your order</div>
-        </div>
-        <input type="radio" id="paymentMethodCod" name="paymentMethod" value="cod" style="margin-left: auto;">
-    `;
+    let codEnabled = true;
+    if (shopData.paymentMethods) {
+        codEnabled = shopData.paymentMethods.cash !== false;
+    } 
+    else if (shopData.upiSettings && shopData.upiSettings.acceptedMethods) {
+        codEnabled = shopData.upiSettings.acceptedMethods.cash !== false;
+    }
+    else if (shopData.settings && shopData.settings.paymentMethods) {
+        codEnabled = shopData.settings.paymentMethods.cash !== false;
+    }
     
-    // Re-attach event listener
-    const newCodRadio = document.getElementById('paymentMethodCod');
-    if (newCodRadio) {
-        newCodRadio.addEventListener('change', function() {
-            if (this.checked && !this.disabled) {
+    if (codEnabled) {
+        codOption.style.display = 'flex';
+        codOption.style.opacity = '1';
+        codOption.style.cursor = 'pointer';
+        codOption.innerHTML = `
+            <div class="payment-icon"><i class="fas fa-money-bill-wave"></i></div>
+            <div class="payment-info">
+                <div class="payment-title">Cash on Delivery</div>
+                <div class="payment-desc">Pay when you receive your order</div>
+            </div>
+            <input type="radio" id="paymentMethodCod" name="paymentMethod" value="cod" style="margin-left: auto;">
+        `;
+        
+        // Re-attach event listener
+        const newCodRadio = document.getElementById('paymentMethodCod');
+        if (newCodRadio) {
+            newCodRadio.addEventListener('change', function() {
+                if (this.checked && !this.disabled) {
+                    selectPaymentMethod('cod');
+                }
+            });
+            
+            // Set as default if UPI is disabled
+            if (!upiEnabled) {
+                newCodRadio.checked = true;
                 selectPaymentMethod('cod');
             }
-        });
-        
-        // Set as default if UPI is disabled
-        if (!upiEnabled) {
-            newCodRadio.checked = true;
-            selectPaymentMethod('cod');
         }
+    } else {
+        codOption.style.display = 'flex';
+        codOption.style.opacity = '0.5';
+        codOption.style.cursor = 'not-allowed';
+        codOption.innerHTML = `
+            <div class="payment-icon"><i class="fas fa-money-bill-wave"></i></div>
+            <div class="payment-info">
+                <div class="payment-title" style="color: #999;">Cash on Delivery</div>
+                <div class="payment-desc" style="color: #FF6B6B;">This payment method is temporarily unavailable</div>
+            </div>
+            <input type="radio" id="paymentMethodCod" name="paymentMethod" value="cod" style="margin-left: auto;" disabled>
+        `;
     }
-} else {
-    codOption.style.display = 'flex';
-    codOption.style.opacity = '0.5';
-    codOption.style.cursor = 'not-allowed';
-    codOption.innerHTML = `
-        <div class="payment-icon"><i class="fas fa-money-bill-wave"></i></div>
-        <div class="payment-info">
-            <div class="payment-title" style="color: #999;">Cash on Delivery</div>
-            <div class="payment-desc" style="color: #FF6B6B;">This payment method is temporarily unavailable</div>
-        </div>
-        <input type="radio" id="paymentMethodCod" name="paymentMethod" value="cod" style="margin-left: auto;" disabled>
-    `;
-}
 }
 
 if (qrSection) {
-if (upiRadio && upiRadio.checked && upiEnabled) {
-    qrSection.style.display = 'block';
-} else {
-    qrSection.style.display = 'none';
-}
+    if (upiRadio && upiRadio.checked && upiEnabled) {
+        qrSection.style.display = 'block';
+    } else {
+        qrSection.style.display = 'none';
+    }
 }
 
 console.log("✅ updatePaymentSectionUI completed");
 
 function showLoading(show) {
-const placeOrderBtn = document.getElementById('placeOrderBtn');
-if (!placeOrderBtn) return;
-
-if (show) {
-    placeOrderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-    placeOrderBtn.disabled = true;
-} else {
-    placeOrderBtn.innerHTML = '<i class="fas fa-lock"></i> Place Order Securely';
-    placeOrderBtn.disabled = cart.length === 0 || !selectedPaymentMethod;
-}
+    const placeOrderBtn = document.getElementById('placeOrderBtn');
+    if (!placeOrderBtn) return;
+    
+    if (show) {
+        placeOrderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        placeOrderBtn.disabled = true;
+    } else {
+        placeOrderBtn.innerHTML = '<i class="fas fa-lock"></i> Place Order Securely';
+        placeOrderBtn.disabled = cart.length === 0 || !selectedPaymentMethod;
+    }
 }
 
 // ==================== UPDATED: setupPaymentSelection function ====================
 function setupPaymentSelection() {
-console.log("🔧 Setting up payment selection listeners");
-
-const upiRadio = document.getElementById('paymentMethodUpi');
-const codRadio = document.getElementById('paymentMethodCod');
-const qrSection = document.getElementById('qrCodeSection');
-
-if (!upiRadio || !codRadio || !qrSection) {
-    console.log("❌ Payment elements not found, retrying in 500ms");
-    setTimeout(setupPaymentSelection, 500);
-    return;
-}
-
-// Remove existing event listeners
-const newUpiRadio = upiRadio.cloneNode(true);
-const newCodRadio = codRadio.cloneNode(true);
-upiRadio.parentNode.replaceChild(newUpiRadio, upiRadio);
-codRadio.parentNode.replaceChild(newCodRadio, codRadio);
-
-// Add new event listeners
-newUpiRadio.addEventListener('change', function() {
-    if (this.checked && !this.disabled) {
-        console.log("🎯 UPI payment selected");
-        selectPaymentMethod('qr');
+    console.log("🔧 Setting up payment selection listeners");
+    
+    const upiRadio = document.getElementById('paymentMethodUpi');
+    const codRadio = document.getElementById('paymentMethodCod');
+    const qrSection = document.getElementById('qrCodeSection');
+    
+    if (!upiRadio || !codRadio || !qrSection) {
+        console.log("❌ Payment elements not found, retrying in 500ms");
+        setTimeout(setupPaymentSelection, 500);
+        return;
     }
-});
-
-newCodRadio.addEventListener('change', function() {
-    if (this.checked && !this.disabled) {
-        console.log("🎯 COD payment selected");
-        selectPaymentMethod('cod');
-    }
-});
-
-// Set COD as default
-newCodRadio.checked = true;
-selectedPaymentMethod = 'cod';
-
-qrSection.style.transition = 'all 0.3s ease';
-qrSection.style.opacity = '0';
-qrSection.style.transform = 'translateY(10px)';
-qrSection.style.display = 'none';
-
-console.log("✅ Payment selection setup complete");
+    
+    // Remove existing event listeners
+    const newUpiRadio = upiRadio.cloneNode(true);
+    const newCodRadio = codRadio.cloneNode(true);
+    upiRadio.parentNode.replaceChild(newUpiRadio, upiRadio);
+    codRadio.parentNode.replaceChild(newCodRadio, codRadio);
+    
+    // Add new event listeners
+    newUpiRadio.addEventListener('change', function() {
+        if (this.checked && !this.disabled) {
+            console.log("🎯 UPI payment selected");
+            selectPaymentMethod('qr');
+        }
+    });
+    
+    newCodRadio.addEventListener('change', function() {
+        if (this.checked && !this.disabled) {
+            console.log("🎯 COD payment selected");
+            selectPaymentMethod('cod');
+        }
+    });
+    
+    // Set COD as default
+    newCodRadio.checked = true;
+    selectedPaymentMethod = 'cod';
+    
+    qrSection.style.transition = 'all 0.3s ease';
+    qrSection.style.opacity = '0';
+    qrSection.style.transform = 'translateY(10px)';
+    qrSection.style.display = 'none';
+    
+    console.log("✅ Payment selection setup complete");
 }
 
 function showSearchResults(products) {
-const searchResults = document.getElementById('searchResults');
-if (!searchResults) return;
-
-searchResults.innerHTML = '';
-
-if (products.length === 0) {
-    searchResults.style.display = 'none';
-    return;
-}
-
-const limitedResults = products.slice(0, 5);
-
-limitedResults.forEach(product => {
-    const searchItem = document.createElement('div');
-    searchItem.className = 'search-result-item';
-    searchItem.innerHTML = `
-        <img src="${product.image || 'https://via.placeholder.com/50'}" alt="${product.name}" class="search-result-image" onerror="this.src='https://via.placeholder.com/50'">
-        <div class="search-result-info">
-            <div class="search-result-name">${product.name}</div>
-            <div class="search-result-category">${product.category || ''} • ${product.shopName || ''}</div>
-        </div>
-        <div class="search-result-price">₹${product.price || 0}</div>
-    `;
-    searchItem.addEventListener('click', () => {
-        const searchInput = document.getElementById('search');
-        if (searchInput) {
-            searchInput.value = product.name;
-        }
-        if (typeof showProductDetail === 'function') {
-            showProductDetail(product.id);
-        }
+    const searchResults = document.getElementById('searchResults');
+    if (!searchResults) return;
+    
+    searchResults.innerHTML = '';
+    
+    if (products.length === 0) {
         searchResults.style.display = 'none';
+        return;
+    }
+    
+    const limitedResults = products.slice(0, 5);
+    
+    limitedResults.forEach(product => {
+        const searchItem = document.createElement('div');
+        searchItem.className = 'search-result-item';
+        searchItem.innerHTML = `
+            <img src="${product.image || 'https://via.placeholder.com/50'}" alt="${product.name}" class="search-result-image" onerror="this.src='https://via.placeholder.com/50'">
+            <div class="search-result-info">
+                <div class="search-result-name">${product.name}</div>
+                <div class="search-result-category">${product.category || ''} • ${product.shopName || ''}</div>
+            </div>
+            <div class="search-result-price">₹${product.price || 0}</div>
+        `;
+        searchItem.addEventListener('click', () => {
+            const searchInput = document.getElementById('search');
+            if (searchInput) {
+                searchInput.value = product.name;
+            }
+            if (typeof showProductDetail === 'function') {
+                showProductDetail(product.id);
+            }
+            searchResults.style.display = 'none';
+        });
+        searchResults.appendChild(searchItem);
     });
-    searchResults.appendChild(searchItem);
-});
-
-searchResults.style.display = 'block';
+    
+    searchResults.style.display = 'block';
 }
 
 // Start app when DOM is loaded
