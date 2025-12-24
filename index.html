@@ -3400,67 +3400,91 @@ function renderProducts(products) {
         }
 
         function updateOrderSummary() {
-            const orderList = document.getElementById('orderList');
-            if (!orderList) return;
-            
-            orderList.innerHTML = '';
-            let subtotal = 0;
-            
-            cart.forEach((item, index) => {
-                const itemTotal = item.price * item.quantity;
-                subtotal += itemTotal;
-                
-                const orderItem = document.createElement('div');
-                orderItem.className = 'order-item-summary';
-                orderItem.innerHTML = `
-                    <div style="flex: 1;">
-                        <strong>${item.name}</strong>
-                        <div class="order-item-shop-name">
-                            <i class="fas fa-store"></i> ${item.shopName || 'Unknown Shop'}
-                        </div>
-                        <div class="text-muted">₹${item.price} each</div>
-                        <div class="quantity-controls" style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
-                            <button onclick="updateCartQuantity(${index}, -1)" 
-                                    style="width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border); background: var(--neutral); display: flex; align-items: center; justify-content: center;">-</button>
-                            <span style="font-weight: 600; min-width: 20px; text-align: center;">${item.quantity}</span>
-                            <button onclick="updateCartQuantity(${index}, 1)" 
-                                    style="width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border); background: var(--neutral); display: flex; align-items: center; justify-content: center;">+</button>
-                        </div>
-                    </div>
-                    <div>₹${itemTotal}</div>
-                `;
-                orderList.appendChild(orderItem);
-            });
-            
-            let discount = 0;
-            if (appliedCoupon) {
-                if (subtotal < appliedCoupon.minOrder) {
-                    appliedCoupon = null;
-                    document.getElementById('couponCode').value = '';
-                    document.getElementById('couponMessage').textContent = 'Cart value is below coupon minimum. Coupon removed.';
-                    document.getElementById('couponMessage').className = 'coupon-error';
-                } else {
-                    if (appliedCoupon.type === 'percentage') {
-                        discount = (subtotal * appliedCoupon.value) / 100;
-                    } else {
-                        discount = appliedCoupon.value;
-                    }
-                    discount = Math.min(discount, subtotal);
-                }
-            }
-            
-            const total = Math.max(0, subtotal - discount);
-            const orderTotal = document.getElementById('orderTotal');
-            const qrAmount = document.getElementById('qrAmount');
-            
-            if (orderTotal) orderTotal.textContent = `₹${Math.max(0, total)}`;
-            if (qrAmount) qrAmount.textContent = `₹${Math.max(0, total)}`;
-            
-            const placeOrderBtn = document.getElementById('placeOrderBtn');
-            if (placeOrderBtn) {
-                placeOrderBtn.disabled = cart.length === 0;
-            }
+    const orderList = document.getElementById('orderList');
+    if (!orderList) return;
+    
+    orderList.innerHTML = '';
+    let subtotal = 0;
+    
+    // Check if cart is empty
+    if (cart.length === 0) {
+        orderList.innerHTML = `
+            <div class="empty-state" style="padding: 30px 20px; text-align: center;">
+                <div class="empty-icon"><i class="fas fa-shopping-cart"></i></div>
+                <div class="empty-text">Your cart is empty</div>
+            </div>
+        `;
+        
+        // Reset total and disable place order button
+        if (document.getElementById('orderTotal')) {
+            document.getElementById('orderTotal').textContent = '₹0';
         }
+        if (document.getElementById('qrAmount')) {
+            document.getElementById('qrAmount').textContent = '₹0';
+        }
+        if (document.getElementById('placeOrderBtn')) {
+            document.getElementById('placeOrderBtn').disabled = true;
+        }
+        
+        return;
+    }
+    
+    // Cart has items, display them
+    cart.forEach((item, index) => {
+        const itemTotal = item.price * item.quantity;
+        subtotal += itemTotal;
+        
+        const orderItem = document.createElement('div');
+        orderItem.className = 'order-item-summary';
+        orderItem.innerHTML = `
+            <div style="flex: 1;">
+                <strong>${item.name}</strong>
+                <div class="order-item-shop-name">
+                    <i class="fas fa-store"></i> ${item.shopName || 'Unknown Shop'}
+                </div>
+                <div class="text-muted">₹${item.price} each</div>
+                <div class="quantity-controls" style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
+                    <button onclick="updateCartQuantity(${index}, -1)" 
+                            style="width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border); background: var(--neutral); display: flex; align-items: center; justify-content: center; cursor: pointer;">-</button>
+                    <span style="font-weight: 600; min-width: 20px; text-align: center;">${item.quantity}</span>
+                    <button onclick="updateCartQuantity(${index}, 1)" 
+                            style="width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border); background: var(--neutral); display: flex; align-items: center; justify-content: center; cursor: pointer;">+</button>
+                </div>
+            </div>
+            <div>₹${itemTotal}</div>
+        `;
+        orderList.appendChild(orderItem);
+    });
+    
+    let discount = 0;
+    if (appliedCoupon) {
+        if (subtotal < appliedCoupon.minOrder) {
+            appliedCoupon = null;
+            document.getElementById('couponCode').value = '';
+            document.getElementById('couponMessage').textContent = 'Cart value is below coupon minimum. Coupon removed.';
+            document.getElementById('couponMessage').className = 'coupon-error';
+        } else {
+            if (appliedCoupon.type === 'percentage') {
+                discount = (subtotal * appliedCoupon.value) / 100;
+            } else {
+                discount = appliedCoupon.value;
+            }
+            discount = Math.min(discount, subtotal);
+        }
+    }
+    
+    const total = Math.max(0, subtotal - discount);
+    const orderTotal = document.getElementById('orderTotal');
+    const qrAmount = document.getElementById('qrAmount');
+    
+    if (orderTotal) orderTotal.textContent = `₹${Math.max(0, total)}`;
+    if (qrAmount) qrAmount.textContent = `₹${Math.max(0, total)}`;
+    
+    const placeOrderBtn = document.getElementById('placeOrderBtn');
+    if (placeOrderBtn) {
+        placeOrderBtn.disabled = cart.length === 0;
+    }
+}
 
         async function setupFirebaseMessaging() {
             if (!messaging) {
