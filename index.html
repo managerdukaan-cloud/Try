@@ -6344,6 +6344,564 @@ Placed on: ${new Date(order.date).toLocaleDateString()}
             renderProducts(filteredProducts);
         }
 
+        // Payment methods - UPDATE THIS PART
+    document.querySelectorAll('.payment-option').forEach(option => {
+        option.addEventListener('click', function() {
+            const method = this.getAttribute('data-method');
+            const radio = this.querySelector('input[type="radio"]');
+            if (radio && !radio.disabled) {
+                radio.checked = true;
+                selectPaymentMethod(method);
+            }
+        });
+    });
+
+        // ==================== ADD MISSING FUNCTIONS ====================
+function selectPaymentMethod(method) {
+    console.log("🎯 Payment method selected:", method);
+    
+    selectedPaymentMethod = method;
+    
+    // Handle QR code section visibility
+    const qrSection = document.getElementById('qrCodeSection');
+    if (method === 'qr') {
+        qrSection.style.display = 'block';
+        setTimeout(() => {
+            qrSection.style.opacity = '1';
+            qrSection.style.transform = 'translateY(0)';
+        }, 10);
+        
+        // Select the radio button
+        const upiRadio = document.getElementById('paymentMethodUpi');
+        if (upiRadio && !upiRadio.disabled) {
+            upiRadio.checked = true;
+        }
+    } else {
+        qrSection.style.opacity = '0';
+        qrSection.style.transform = 'translateY(10px)';
+        setTimeout(() => {
+            qrSection.style.display = 'none';
+        }, 300);
+        
+        // Select the radio button
+        const codRadio = document.getElementById('paymentMethodCod');
+        if (codRadio && !codRadio.disabled) {
+            codRadio.checked = true;
+        }
+    }
+    
+    // Enable place order button if cart has items
+    const placeOrderBtn = document.getElementById('placeOrderBtn');
+    if (placeOrderBtn && cart.length > 0) {
+        placeOrderBtn.disabled = false;
+    }
+}
+
+async function placeOrder() {
+    console.log("🚀 Place order function called");
+    
+    // Check if cart is empty
+    if (cart.length === 0) {
+        showToast('Your cart is empty', 'error');
+        return;
+    }
+    
+    // Check shop status
+    if (!isShopAcceptingOrders()) {
+        showToast(`Cannot place order. Shop is currently ${SHOP_STATUS}.`, 'error');
+        return;
+    }
+    
+    // Validate payment method
+    if (!selectedPaymentMethod) {
+        showToast('Please select a payment method', 'error');
+        return;
+    }
+    
+    // Validate address
+    const name = document.getElementById('checkoutName').value.trim();
+    const phone = document.getElementById('checkoutPhone').value.trim();
+    const city = document.getElementById('checkoutCity').value.trim();
+    const pincode = document.getElementById('checkoutPincode').value.trim();
+    const address = document.getElementById('checkoutAddress').value.trim();
+    
+    if (!name || !city || !pincode || !address) {
+        showToast('Please fill all required address fields', 'error');
+        return;
+    }
+    
+    if (phone && !validatePhoneNumber(phone)) {
+        showToast('Please enter a valid phone number', 'error');
+        return;
+    }
+    
+    // Validate UTR for QR payment
+    if (selectedPaymentMethod === 'qr') {
+        const utr = document.getElementById('utrNumber').value.trim();
+        if (!/^\d{12}$/.test(utr)) {
+            showToast('Please enter a valid 12-digit UTR number', 'error');
+            return;
+        }
+        qrUTR = utr;
+    }
+    
+    // Show loading
+    showLoading(true);
+    
+    try {
+        // Calculate order total
+        const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        let discount = 0;
+        
+        if (appliedCoupon) {
+            if (appliedCoupon.type === 'percentage') {
+                discount = (subtotal * appliedCoupon.value) / 100;
+            } else {
+                discount = appliedCoupon.value;
+            }
+            discount = Math.min(discount, subtotal);
+        }
+        
+        const total = Math.max(0, subtotal - discount);
+        
+        // Create order object
+        const orderId = 'ORD' + Date.now() + Math.random().toString(36).substr(2, 6).toUpperCase();
+        const orderData = {
+            orderId: orderId,
+            customerId: currentUser ? currentUser.uid : 'guest',
+            customerName: name,
+            customerEmail: currentUser ? currentUser.email : 'guest@example.com',
+            customerPhone: phone,
+            items: cart.map(item => ({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                quantity: item.quantity,
+                shopId: item.shopId,
+                shopName: item.shopName
+            })),
+            address: {
+                name: name,
+                phone: phone,
+                city: city,
+                pincode: pincode,
+                address: address
+            },
+            paymentMethod: selectedPaymentMethod,
+            subtotal: subtotal,
+            discount: discount,
+            total: total,
+            status: 'confirmed',
+            shopId: cart[0].shopId,
+            shopName: cart[0].shopName,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        
+        // Add UTR for QR payments
+        if (selectedPaymentMethod === 'qr' && qrUTR) {
+            orderData.utrNumber = qrUTR;
+        }
+        
+        // Save order to Firebase if user is logged in
+        if (currentUser && isOnline) {
+            await db.collection('orders').doc(orderId).set(orderData);
+            console.log("✅ Order saved to Firebase:", orderId);
+            
+            // Send notification to shopkeeper
+            await sendOrderNotificationToShopkeeper(orderData);
+        }
+        
+        // Save order locally
+        orders.unshift({
+            ...orderData,
+            id: orderId,
+            date: new Date().toISOString(),
+            createdAt: Date.now()
+        });
+        localStorage.setItem('dukaan_orders', JSON.stringify(orders));
+        
+        // Clear cart
+        cart = [];
+        localStorage.setItem('dukaan_cart', JSON.stringify(cart));
+        appliedCoupon = null;
+        
+        // Update UI
+        updateCartUI();
+        updateOrderSummary();
+        renderOrders();
+        
+        // Show success message
+        showToast(`Order #${orderId.slice(-6)} placed successfully!`, 'success');
+        
+        // Close bottom sheet
+        closeBottomSheet();
+        
+        // Navigate to orders page
+        navigateToPage('orders');
+        
+    } catch (error) {
+        console.error("❌ Error placing order:", error);
+        showToast('Error placing order: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// ==================== UPDATED: updateOrderSummary function ====================
+function updateOrderSummary() {
+    const orderList = document.getElementById('orderList');
+    if (!orderList) return;
+    
+    orderList.innerHTML = '';
+    let subtotal = 0;
+    
+    // Check if cart is empty
+    if (cart.length === 0) {
+        orderList.innerHTML = `
+            <div class="empty-state" style="padding: 30px 20px; text-align: center;">
+                <div class="empty-icon"><i class="fas fa-shopping-cart"></i></div>
+                <div class="empty-text">Your cart is empty</div>
+            </div>
+        `;
+        
+        // Hide discount section
+        document.getElementById('discountSection').style.display = 'none';
+        
+        // Reset total and disable place order button
+        const orderTotal = document.getElementById('orderTotal');
+        const qrAmount = document.getElementById('qrAmount');
+        const placeOrderBtn = document.getElementById('placeOrderBtn');
+        
+        if (orderTotal) orderTotal.textContent = '₹0';
+        if (qrAmount) qrAmount.textContent = '₹0';
+        if (placeOrderBtn) {
+            placeOrderBtn.disabled = true;
+            placeOrderBtn.innerHTML = '<i class="fas fa-lock"></i> Place Order Securely';
+        }
+        
+        return;
+    }
+    
+    // Cart has items, display them
+    cart.forEach((item, index) => {
+        const itemTotal = item.price * item.quantity;
+        subtotal += itemTotal;
+        
+        const orderItem = document.createElement('div');
+        orderItem.className = 'order-item-summary';
+        orderItem.innerHTML = `
+            <div style="flex: 1;">
+                <strong>${item.name}</strong>
+                <div class="order-item-shop-name">
+                    <i class="fas fa-store"></i> ${item.shopName || 'Unknown Shop'}
+                </div>
+                <div class="text-muted">₹${item.price} each</div>
+                <div class="quantity-controls" style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
+                    <button onclick="updateCartQuantity(${index}, -1)" 
+                            style="width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border); background: var(--neutral); display: flex; align-items: center; justify-content: center; cursor: pointer;">-</button>
+                    <span style="font-weight: 600; min-width: 20px; text-align: center;">${item.quantity}</span>
+                    <button onclick="updateCartQuantity(${index}, 1)" 
+                            style="width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border); background: var(--neutral); display: flex; align-items: center; justify-content: center; cursor: pointer;">+</button>
+                </div>
+            </div>
+            <div>₹${itemTotal}</div>
+        `;
+        orderList.appendChild(orderItem);
+    });
+    
+    let discount = 0;
+    const discountSection = document.getElementById('discountSection');
+    const discountAmount = document.getElementById('discountAmount');
+    
+    if (appliedCoupon) {
+        if (subtotal < appliedCoupon.minOrder) {
+            appliedCoupon = null;
+            document.getElementById('couponCode').value = '';
+            document.getElementById('couponMessage').textContent = 'Cart value is below coupon minimum. Coupon removed.';
+            document.getElementById('couponMessage').className = 'coupon-error';
+            discountSection.style.display = 'none';
+        } else {
+            if (appliedCoupon.type === 'percentage') {
+                discount = (subtotal * appliedCoupon.value) / 100;
+                discountAmount.textContent = `-₹${discount.toFixed(2)} (${appliedCoupon.value}%)`;
+            } else {
+                discount = appliedCoupon.value;
+                discountAmount.textContent = `-₹${discount.toFixed(2)}`;
+            }
+            discount = Math.min(discount, subtotal);
+            discountSection.style.display = 'flex';
+        }
+    } else {
+        discountSection.style.display = 'none';
+    }
+    
+    const total = Math.max(0, subtotal - discount);
+    const orderTotal = document.getElementById('orderTotal');
+    const qrAmount = document.getElementById('qrAmount');
+    
+    if (orderTotal) orderTotal.textContent = `₹${total.toFixed(2)}`;
+    if (qrAmount) qrAmount.textContent = `₹${total.toFixed(2)}`;
+    
+    const placeOrderBtn = document.getElementById('placeOrderBtn');
+    if (placeOrderBtn) {
+        placeOrderBtn.disabled = cart.length === 0;
+        placeOrderBtn.innerHTML = '<i class="fas fa-lock"></i> Place Order Securely';
+    }
+}
+
+// ==================== UPDATED: updatePaymentSectionUI function ====================
+function updatePaymentSectionUI(shopData) {
+    console.log("🔥 updatePaymentSectionUI CALLED:", shopData);
+    
+    if (shopData) {
+        SHOP_CONFIG = shopData;
+        console.log("💾 SHOP_CONFIG saved:", SHOP_CONFIG);
+    }
+    
+    if (!shopData) {
+        console.log("❌ No shop data to update UI");
+        return;
+    }
+    
+    let upiId = "";
+    if (shopData.upiId) {
+        upiId = shopData.upiId;
+    } else if (shopData.upiSettings && shopData.upiSettings.upiId) {
+        upiId = shopData.upiSettings.upiId;
+    } else if (shopData.settings && shopData.settings.upiId) {
+        upiId = shopData.settings.upiId;
+    }
+    
+    let qrUrl = "";
+    if (shopData.qrCodeImage && typeof shopData.qrCodeImage === 'string' && 
+        shopData.qrCodeImage.includes('cloudinary.com')) {
+        qrUrl = shopData.qrCodeImage;
+    } else if (shopData.upiSettings && shopData.upiSettings.qrCodeImage && 
+             typeof shopData.upiSettings.qrCodeImage === 'string' &&
+             shopData.upiSettings.qrCodeImage.includes('cloudinary.com')) {
+        qrUrl = shopData.upiSettings.qrCodeImage;
+    } else if (shopData.settings && shopData.settings.qrCodeImage &&
+             typeof shopData.settings.qrCodeImage === 'string' &&
+             shopData.settings.qrCodeImage.includes('cloudinary.com')) {
+        qrUrl = shopData.settings.qrCodeImage;
+    } else if (upiId) {
+        qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiId)}`;
+    } else if (shopData.qrImage) {
+        qrUrl = shopData.qrImage;
+    } else if (shopData.qrCode) {
+        qrUrl = shopData.qrCode;
+    }
+    
+    const upiElement = document.getElementById('displayUpiId');
+    const qrElement = document.getElementById('qrCodeImage');
+    const qrSection = document.getElementById('qrCodeSection');
+    
+    if (upiElement) {
+        if (upiId) {
+            upiElement.textContent = upiId;
+        } else {
+            upiElement.textContent = "UPI ID not configured";
+            upiElement.style.color = "#999";
+        }
+    }
+    
+    if (qrElement) {
+        if (qrUrl) {
+            const timestamp = Date.now();
+            const separator = qrUrl.includes('?') ? '&' : '?';
+            qrElement.src = qrUrl + separator + 't=' + timestamp;
+            qrElement.alt = "Scan to pay via UPI";
+            qrElement.style.display = 'block';
+        } else {
+            qrElement.style.display = 'none';
+        }
+    }
+    
+    const upiOption = document.getElementById('upiPaymentOption');
+    const codOption = document.getElementById('codPaymentOption');
+    const upiRadio = document.getElementById('paymentMethodUpi');
+    const codRadio = document.getElementById('paymentMethodCod');
+    
+    if (upiOption) {
+        let upiEnabled = true;
+        if (shopData.paymentMethods) {
+            upiEnabled = shopData.paymentMethods.upi !== false;
+        } 
+        else if (shopData.upiSettings && shopData.upiSettings.acceptedMethods) {
+            upiEnabled = shopData.upiSettings.acceptedMethods.upi !== false;
+        }
+        else if (shopData.settings && shopData.settings.paymentMethods) {
+            upiEnabled = shopData.settings.paymentMethods.upi !== false;
+        }
+        
+        if (!upiId && !qrUrl) {
+            upiEnabled = false;
+        }
+        
+        if (upiEnabled) {
+            upiOption.style.display = 'flex';
+            upiOption.style.opacity = '1';
+            upiOption.style.cursor = 'pointer';
+            upiOption.innerHTML = `
+                <div class="payment-icon"><i class="fas fa-qrcode"></i></div>
+                <div class="payment-info">
+                    <div class="payment-title">QR Code Payment</div>
+                    <div class="payment-desc">Scan and pay via UPI</div>
+                </div>
+                <input type="radio" id="paymentMethodUpi" name="paymentMethod" value="upi" style="margin-left: auto;">
+            `;
+            
+            // Re-attach event listener
+            const newUpiRadio = document.getElementById('paymentMethodUpi');
+            if (newUpiRadio) {
+                newUpiRadio.addEventListener('change', function() {
+                    if (this.checked && !this.disabled) {
+                        selectPaymentMethod('qr');
+                    }
+                });
+            }
+        } else {
+            upiOption.style.display = 'flex';
+            upiOption.style.opacity = '0.5';
+            upiOption.style.cursor = 'not-allowed';
+            upiOption.innerHTML = `
+                <div class="payment-icon"><i class="fas fa-qrcode"></i></div>
+                <div class="payment-info">
+                    <div class="payment-title" style="color: #999;">QR Code Payment</div>
+                    <div class="payment-desc" style="color: #FF6B6B;">This payment method is temporarily unavailable</div>
+                </div>
+                <input type="radio" id="paymentMethodUpi" name="paymentMethod" value="upi" style="margin-left: auto;" disabled>
+            `;
+        }
+    }
+    
+    if (codOption) {
+        let codEnabled = true;
+        if (shopData.paymentMethods) {
+            codEnabled = shopData.paymentMethods.cash !== false;
+        } 
+        else if (shopData.upiSettings && shopData.upiSettings.acceptedMethods) {
+            codEnabled = shopData.upiSettings.acceptedMethods.cash !== false;
+        }
+        else if (shopData.settings && shopData.settings.paymentMethods) {
+            codEnabled = shopData.settings.paymentMethods.cash !== false;
+        }
+        
+        if (codEnabled) {
+            codOption.style.display = 'flex';
+            codOption.style.opacity = '1';
+            codOption.style.cursor = 'pointer';
+            codOption.innerHTML = `
+                <div class="payment-icon"><i class="fas fa-money-bill-wave"></i></div>
+                <div class="payment-info">
+                    <div class="payment-title">Cash on Delivery</div>
+                    <div class="payment-desc">Pay when you receive your order</div>
+                </div>
+                <input type="radio" id="paymentMethodCod" name="paymentMethod" value="cod" style="margin-left: auto;">
+            `;
+            
+            // Re-attach event listener
+            const newCodRadio = document.getElementById('paymentMethodCod');
+            if (newCodRadio) {
+                newCodRadio.addEventListener('change', function() {
+                    if (this.checked && !this.disabled) {
+                        selectPaymentMethod('cod');
+                    }
+                });
+                
+                // Set as default if UPI is disabled
+                if (!upiEnabled) {
+                    newCodRadio.checked = true;
+                    selectPaymentMethod('cod');
+                }
+            }
+        } else {
+            codOption.style.display = 'flex';
+            codOption.style.opacity = '0.5';
+            codOption.style.cursor = 'not-allowed';
+            codOption.innerHTML = `
+                <div class="payment-icon"><i class="fas fa-money-bill-wave"></i></div>
+                <div class="payment-info">
+                    <div class="payment-title" style="color: #999;">Cash on Delivery</div>
+                    <div class="payment-desc" style="color: #FF6B6B;">This payment method is temporarily unavailable</div>
+                </div>
+                <input type="radio" id="paymentMethodCod" name="paymentMethod" value="cod" style="margin-left: auto;" disabled>
+            `;
+        }
+    }
+    
+    if (qrSection) {
+        if (upiRadio && upiRadio.checked && upiEnabled) {
+            qrSection.style.display = 'block';
+        } else {
+            qrSection.style.display = 'none';
+        }
+    }
+    
+    console.log("✅ updatePaymentSectionUI completed");
+}
+
+function showLoading(show) {
+    const placeOrderBtn = document.getElementById('placeOrderBtn');
+    if (!placeOrderBtn) return;
+    
+    if (show) {
+        placeOrderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        placeOrderBtn.disabled = true;
+    } else {
+        placeOrderBtn.innerHTML = '<i class="fas fa-lock"></i> Place Order Securely';
+        placeOrderBtn.disabled = cart.length === 0 || !selectedPaymentMethod;
+    }
+}
+
+// ==================== UPDATED: setupPaymentSelection function ====================
+function setupPaymentSelection() {
+    console.log("🔧 Setting up payment selection listeners");
+    
+    const upiRadio = document.getElementById('paymentMethodUpi');
+    const codRadio = document.getElementById('paymentMethodCod');
+    const qrSection = document.getElementById('qrCodeSection');
+    
+    if (!upiRadio || !codRadio || !qrSection) {
+        console.log("❌ Payment elements not found, retrying in 500ms");
+        setTimeout(setupPaymentSelection, 500);
+        return;
+    }
+    
+    // Remove existing event listeners
+    const newUpiRadio = upiRadio.cloneNode(true);
+    const newCodRadio = codRadio.cloneNode(true);
+    upiRadio.parentNode.replaceChild(newUpiRadio, upiRadio);
+    codRadio.parentNode.replaceChild(newCodRadio, codRadio);
+    
+    // Add new event listeners
+    newUpiRadio.addEventListener('change', function() {
+        if (this.checked && !this.disabled) {
+            console.log("🎯 UPI payment selected");
+            selectPaymentMethod('qr');
+        }
+    });
+    
+    newCodRadio.addEventListener('change', function() {
+        if (this.checked && !this.disabled) {
+            console.log("🎯 COD payment selected");
+            selectPaymentMethod('cod');
+        }
+    });
+    
+    // Set COD as default
+    newCodRadio.checked = true;
+    selectedPaymentMethod = 'cod';
+    
+    qrSection.style.transition = 'all 0.3s ease';
+    qrSection.style.opacity = '0';
+    qrSection.style.transform = 'translateY(10px)';
+    qrSection.style.display = 'none';
+    
+    console.log("✅ Payment selection setup complete");
+}
+
         function showSearchResults(products) {
             const searchResults = document.getElementById('searchResults');
             searchResults.innerHTML = '';
