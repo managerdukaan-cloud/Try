@@ -6387,6 +6387,7 @@ async function sendOrderNotificationToShopkeeper(orderData) {
 }
 
 async function placeOrder() {
+ async function placeOrder() {
     console.log("🚀 Place order function called");
     
     // Check if cart is empty
@@ -6401,11 +6402,28 @@ async function placeOrder() {
         return;
     }
     
-    // Validate payment method
+    // ==================== FIXED: Validate payment method properly ====================
     if (!selectedPaymentMethod) {
         showToast('Please select a payment method', 'error');
         return;
     }
+    
+    // Check if selected payment method is actually enabled
+    const upiRadio = document.getElementById('paymentMethodUpi');
+    const codRadio = document.getElementById('paymentMethodCod');
+    
+    if (selectedPaymentMethod === 'qr') {
+        if (!upiRadio || upiRadio.disabled) {
+            showToast('QR Code payment is currently unavailable', 'error');
+            return;
+        }
+    } else if (selectedPaymentMethod === 'cod') {
+        if (!codRadio || codRadio.disabled) {
+            showToast('Cash on Delivery is currently unavailable', 'error');
+            return;
+        }
+    }
+    // ==================== END FIX ====================
     
     // Validate address
     const name = document.getElementById('checkoutName').value.trim();
@@ -6728,42 +6746,46 @@ function updatePaymentSectionUI(shopData) {
             upiEnabled = false;
         }
         
-        if (upiEnabled) {
-            upiOption.style.display = 'flex';
-            upiOption.style.opacity = '1';
-            upiOption.style.cursor = 'pointer';
-            upiOption.innerHTML = `
-                <div class="payment-icon"><i class="fas fa-qrcode"></i></div>
-                <div class="payment-info">
-                    <div class="payment-title">QR Code Payment</div>
-                    <div class="payment-desc">Scan and pay via UPI</div>
-                </div>
-                <input type="radio" id="paymentMethodUpi" name="paymentMethod" value="upi" style="margin-left: auto;">
-            `;
-            
-            // Re-attach event listener
-            const newUpiRadio = document.getElementById('paymentMethodUpi');
-            if (newUpiRadio) {
-                newUpiRadio.addEventListener('change', function() {
-                    if (this.checked && !this.disabled) {
-                        selectPaymentMethod('qr');
-                    }
-                });
-            }
-        } else {
-            upiOption.style.display = 'flex';
-            upiOption.style.opacity = '0.5';
-            upiOption.style.cursor = 'not-allowed';
-            upiOption.innerHTML = `
-                <div class="payment-icon"><i class="fas fa-qrcode"></i></div>
-                <div class="payment-info">
-                    <div class="payment-title" style="color: #999;">QR Code Payment</div>
-                    <div class="payment-desc" style="color: #FF6B6B;">This payment method is temporarily unavailable</div>
-                </div>
-                <input type="radio" id="paymentMethodUpi" name="paymentMethod" value="upi" style="margin-left: auto;" disabled>
-            `;
+        // In updatePaymentSectionUI() function, where you create the payment options:
+if (upiEnabled) {
+    upiOption.style.display = 'flex';
+    upiOption.style.opacity = '1';
+    upiOption.style.cursor = 'pointer';
+    upiOption.innerHTML = `
+        <div class="payment-icon"><i class="fas fa-qrcode"></i></div>
+        <div class="payment-info">
+            <div class="payment-title">QR Code Payment</div>
+            <div class="payment-desc">Scan and pay via UPI</div>
+        </div>
+        <input type="radio" id="paymentMethodUpi" name="paymentMethod" value="upi" style="margin-left: auto;">
+    `;
+    
+    // Add click handler to prevent selection if disabled
+    upiOption.onclick = function(e) {
+        if (!upiEnabled) {
+            e.preventDefault();
+            showToast('This payment method is temporarily unavailable', 'warning');
         }
-    }
+    };
+} else {
+    upiOption.style.display = 'flex';
+    upiOption.style.opacity = '0.5';
+    upiOption.style.cursor = 'not-allowed';
+    upiOption.innerHTML = `
+        <div class="payment-icon"><i class="fas fa-qrcode"></i></div>
+        <div class="payment-info">
+            <div class="payment-title" style="color: #999;">QR Code Payment</div>
+            <div class="payment-desc" style="color: #FF6B6B;">This payment method is temporarily unavailable</div>
+        </div>
+        <input type="radio" id="paymentMethodUpi" name="paymentMethod" value="upi" style="margin-left: auto;" disabled>
+    `;
+    
+    // Prevent any clicks on disabled option
+    upiOption.onclick = function(e) {
+        e.preventDefault();
+        showToast('This payment method is temporarily unavailable', 'warning');
+    };
+}
     
     if (codOption) {
         let codEnabled = true;
