@@ -4049,64 +4049,6 @@ function updatePaymentSectionUI(shopData) {
     console.log("✅ updatePaymentSectionUI completed");
 }
 
-        function setupPaymentSelection() {
-            console.log("🔧 Setting up payment selection listeners");
-            
-            const upiRadio = document.getElementById('paymentMethodUpi');
-            const codRadio = document.getElementById('paymentMethodCod');
-            const qrSection = document.getElementById('qrCodeSection');
-            
-            if (!upiRadio || !codRadio || !qrSection) {
-                console.log("❌ Payment elements not found, retrying in 500ms");
-                setTimeout(setupPaymentSelection, 500);
-                return;
-            }
-            
-            upiRadio.addEventListener('change', function() {
-                if (this.checked) {
-                    console.log("🎯 UPI payment selected");
-                    qrSection.style.display = 'block';
-                    setTimeout(() => {
-                        qrSection.style.opacity = '1';
-                        qrSection.style.transform = 'translateY(0)';
-                    }, 10);
-                    
-                    if (SHOP_CONFIG) {
-                        updatePaymentSectionUI(SHOP_CONFIG);
-                    } else {
-                        if (cart.length > 0) {
-                            loadAndListenToShop();
-                        }
-                    }
-                    
-                    selectedPaymentMethod = 'qr';
-                }
-            });
-            
-            codRadio.addEventListener('change', function() {
-                if (this.checked) {
-                    console.log("🎯 COD payment selected");
-                    qrSection.style.opacity = '0';
-                    qrSection.style.transform = 'translateY(10px)';
-                    setTimeout(() => {
-                        qrSection.style.display = 'none';
-                    }, 300);
-                    
-                    selectedPaymentMethod = 'cod';
-                }
-            });
-            
-            codRadio.checked = true;
-            selectedPaymentMethod = 'cod';
-            
-            qrSection.style.transition = 'all 0.3s ease';
-            qrSection.style.opacity = '0';
-            qrSection.style.transform = 'translateY(10px)';
-            qrSection.style.display = 'none';
-            
-            console.log("✅ Payment selection setup complete");
-        }
-
         async function loadShopData() {
             try {
                 let shopId = 'default_shop';
