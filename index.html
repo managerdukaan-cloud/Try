@@ -6339,6 +6339,53 @@ function selectPaymentMethod(method) {
     }
 }
 
+        // ==================== ADD MISSING FUNCTION ====================
+async function sendOrderNotificationToShopkeeper(orderData) {
+    try {
+        console.log("📤 Sending notification to shopkeeper for order:", orderData.orderId);
+        
+        // यहाँ आप दुकानदार को notification भेजने का logic add करें
+        // उदाहरण के लिए:
+        // 1. Shopkeeper का Firebase Cloud Messaging token प्राप्त करें
+        // 2. Firebase Cloud Functions या अपने server से notification send करें
+        // 3. या Firestore में notification document create करें
+        
+        // TEMPORARY: अभी के लिए सिर्फ console log कर दें
+        console.log(`📦 New Order Notification: Order #${orderData.orderId.slice(-6)} from ${orderData.customerName}, Total: ₹${orderData.total}`);
+        
+        // आप इसे अपनी requirement के अनुसार implement करें
+        // यहाँ एक उदाहरण है:
+        /*
+        if (orderData.shopId) {
+            const shopDoc = await db.collection('shops').doc(orderData.shopId).get();
+            if (shopDoc.exists) {
+                const shopData = shopDoc.data();
+                const shopkeeperId = shopData.ownerId;
+                
+                if (shopkeeperId) {
+                    // Firestore में notification save करें
+                    await db.collection('notifications').add({
+                        userId: shopkeeperId,
+                        title: 'नया ऑर्डर प्राप्त हुआ',
+                        message: `आपको Order #${orderData.orderId.slice(-6)} मिला है - ₹${orderData.total}`,
+                        type: 'new_order',
+                        orderId: orderData.orderId,
+                        read: false,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    console.log("✅ Notification saved to Firestore for shopkeeper");
+                }
+            }
+        }
+        */
+        
+    } catch (error) {
+        console.error("❌ Error sending notification to shopkeeper:", error);
+        // Error को ignore करें ताकि order placement fail न हो
+    }
+}
+
 async function placeOrder() {
     console.log("🚀 Place order function called");
     
