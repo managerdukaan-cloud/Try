@@ -6761,6 +6761,7 @@ if (upiEnabled) {
     `;
     
     // Add click handler to prevent selection if disabled
+if (upiOption) {
     upiOption.onclick = function(e) {
         if (!upiEnabled) {
             e.preventDefault();
@@ -6787,70 +6788,70 @@ if (upiEnabled) {
     };
 }
     
-    if (codOption) {
-        let codEnabled = true;
-        if (shopData.paymentMethods) {
-            codEnabled = shopData.paymentMethods.cash !== false;
-        } 
-        else if (shopData.upiSettings && shopData.upiSettings.acceptedMethods) {
-            codEnabled = shopData.upiSettings.acceptedMethods.cash !== false;
-        }
-        else if (shopData.settings && shopData.settings.paymentMethods) {
-            codEnabled = shopData.settings.paymentMethods.cash !== false;
-        }
+if (codOption) {
+    let codEnabled = true;
+    if (shopData.paymentMethods) {
+        codEnabled = shopData.paymentMethods.cash !== false;
+    } 
+    else if (shopData.upiSettings && shopData.upiSettings.acceptedMethods) {
+        codEnabled = shopData.upiSettings.acceptedMethods.cash !== false;
+    }
+    else if (shopData.settings && shopData.settings.paymentMethods) {
+        codEnabled = shopData.settings.paymentMethods.cash !== false;
+    }
+    
+    if (codEnabled) {
+        codOption.style.display = 'flex';
+        codOption.style.opacity = '1';
+        codOption.style.cursor = 'pointer';
+        codOption.innerHTML = `
+            <div class="payment-icon"><i class="fas fa-money-bill-wave"></i></div>
+            <div class="payment-info">
+                <div class="payment-title">Cash on Delivery</div>
+                <div class="payment-desc">Pay when you receive your order</div>
+            </div>
+            <input type="radio" id="paymentMethodCod" name="paymentMethod" value="cod" style="margin-left: auto;">
+        `;
         
-        if (codEnabled) {
-            codOption.style.display = 'flex';
-            codOption.style.opacity = '1';
-            codOption.style.cursor = 'pointer';
-            codOption.innerHTML = `
-                <div class="payment-icon"><i class="fas fa-money-bill-wave"></i></div>
-                <div class="payment-info">
-                    <div class="payment-title">Cash on Delivery</div>
-                    <div class="payment-desc">Pay when you receive your order</div>
-                </div>
-                <input type="radio" id="paymentMethodCod" name="paymentMethod" value="cod" style="margin-left: auto;">
-            `;
-            
-            // Re-attach event listener
-            const newCodRadio = document.getElementById('paymentMethodCod');
-            if (newCodRadio) {
-                newCodRadio.addEventListener('change', function() {
-                    if (this.checked && !this.disabled) {
-                        selectPaymentMethod('cod');
-                    }
-                });
-                
-                // Set as default if UPI is disabled
-                if (!upiEnabled) {
-                    newCodRadio.checked = true;
+        // Re-attach event listener
+        const newCodRadio = document.getElementById('paymentMethodCod');
+        if (newCodRadio) {
+            newCodRadio.addEventListener('change', function() {
+                if (this.checked && !this.disabled) {
                     selectPaymentMethod('cod');
                 }
+            });
+            
+            // Set as default if UPI is disabled
+            if (!upiEnabled) {
+                newCodRadio.checked = true;
+                selectPaymentMethod('cod');
             }
-        } else {
-            codOption.style.display = 'flex';
-            codOption.style.opacity = '0.5';
-            codOption.style.cursor = 'not-allowed';
-            codOption.innerHTML = `
-                <div class="payment-icon"><i class="fas fa-money-bill-wave"></i></div>
-                <div class="payment-info">
-                    <div class="payment-title" style="color: #999;">Cash on Delivery</div>
-                    <div class="payment-desc" style="color: #FF6B6B;">This payment method is temporarily unavailable</div>
-                </div>
-                <input type="radio" id="paymentMethodCod" name="paymentMethod" value="cod" style="margin-left: auto;" disabled>
-            `;
         }
+    } else {
+        codOption.style.display = 'flex';
+        codOption.style.opacity = '0.5';
+        codOption.style.cursor = 'not-allowed';
+        codOption.innerHTML = `
+            <div class="payment-icon"><i class="fas fa-money-bill-wave"></i></div>
+            <div class="payment-info">
+                <div class="payment-title" style="color: #999;">Cash on Delivery</div>
+                <div class="payment-desc" style="color: #FF6B6B;">This payment method is temporarily unavailable</div>
+            </div>
+            <input type="radio" id="paymentMethodCod" name="paymentMethod" value="cod" style="margin-left: auto;" disabled>
+        `;
     }
-    
-    if (qrSection) {
-        if (upiRadio && upiRadio.checked && upiEnabled) {
-            qrSection.style.display = 'block';
-        } else {
-            qrSection.style.display = 'none';
-        }
+}
+
+if (qrSection) {
+    if (upiRadio && upiRadio.checked && upiEnabled) {
+        qrSection.style.display = 'block';
+    } else {
+        qrSection.style.display = 'none';
     }
-    
-    console.log("✅ updatePaymentSectionUI completed");
+}
+
+console.log("✅ updatePaymentSectionUI completed");
 }
 
 function showLoading(show) {
@@ -6913,7 +6914,7 @@ function setupPaymentSelection() {
     console.log("✅ Payment selection setup complete");
 }
 
-        function showSearchResults(products) {
+function showSearchResults(products) {
     const searchResults = document.getElementById('searchResults');
     searchResults.innerHTML = '';
     
@@ -6950,6 +6951,6 @@ function setupPaymentSelection() {
 document.addEventListener('DOMContentLoaded', function() {
     initApp();
 });
-    </script>
+</script>
 </body>
 </html>
