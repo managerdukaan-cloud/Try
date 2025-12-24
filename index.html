@@ -3110,7 +3110,7 @@
                     showToast(`Cannot add items from different shops. Your cart contains items from ${firstShopName}. Please complete or empty your cart first.`, 'error');
                     
                     // Show confirmation to empty cart and add new item
-                    if (confirm(`Your cart contains items from ${firstShopName}. Would you like to empty the cart and add items from ${currentShopName} instead?`)) {
+                    showToast if (confirm(`Your cart contains items from ${firstShopName}. Would you like to empty the cart and add items from ${currentShopName} instead?`)) {
                         cart = []; // Empty the cart
                         // Now add the new item
                         cart.push({
