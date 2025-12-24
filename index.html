@@ -2996,22 +2996,51 @@
         
         // ==================== YOUR EXISTING addToCart FUNCTION ====================
         function addToCart(productId) {
-            // Check if the shop is accepting orders
-            if (!isShopAcceptingOrders(productId)) {
-                showShopStatusNotification(SHOP_STATUS);
-                showToast('Cannot add to cart. Shop is currently ' + SHOP_STATUS + '.', 'error');
+    // Check if the shop is accepting orders
+    if (!isShopAcceptingOrders(productId)) {
+        showShopStatusNotification(SHOP_STATUS);
+        showToast('Cannot add to cart. Shop is currently ' + SHOP_STATUS + '.', 'error');
+        return;
+    }
+    
+    const product = PRODUCTS.find(p => p.id === productId);
+    if (!product) return;
+    
+    // Check stock
+    if (product.stock <= 0) {
+        showToast('Product is out of stock', 'error');
+        return;
+    }
+    
+    // ==================== NEW: CHECK IF CART HAS ITEMS FROM DIFFERENT SHOP ====================
+    if (cart.length > 0) {
+        const firstItemShopId = cart[0].shopId;
+        const currentProductShopId = product.shopId;
+        
+        if (firstItemShopId !== currentProductShopId) {
+            const firstShopName = cart[0].shopName || 'Other Shop';
+            const currentShopName = product.shopName || 'This Shop';
+            
+            showToast(`Cannot add items from different shops. Your cart contains items from ${firstShopName}. Please complete or empty your cart first.`, 'error');
+            
+            // Show confirmation to empty cart and add new item
+            if (confirm(`Your cart contains items from ${firstShopName}. Would you like to empty the cart and add items from ${currentShopName} instead?`)) {
+                cart = []; // Empty the cart
+                // Now add the new item
+                cart.push({
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    shopId: product.shopId,
+                    shopName: product.shopName || 'Unknown Shop',
+                    quantity: 1
+                });
+                showToast('Cart emptied and new item added');
+            } else {
                 return;
             }
-            
-            const product = PRODUCTS.find(p => p.id === productId);
-            if (!product) return;
-            
-            // Check stock
-            if (product.stock <= 0) {
-                showToast('Product is out of stock', 'error');
-                return;
-            }
-            
+        } else {
+            // Same shop, proceed normally
             const existingItem = cart.find(item => item.id === productId);
             
             if (existingItem) {
@@ -3032,12 +3061,24 @@
                 });
                 showToast('Added to cart');
             }
-            
-            localStorage.setItem('dukaan_cart', JSON.stringify(cart));
-            updateCartUI();
-            updateProductCardButton(productId);
         }
-
+    } else {
+        // Cart is empty, add item
+        cart.push({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            shopId: product.shopId,
+            shopName: product.shopName || 'Unknown Shop',
+            quantity: 1
+        });
+        showToast('Added to cart');
+    }
+    
+    localStorage.setItem('dukaan_cart', JSON.stringify(cart));
+    updateCartUI();
+    updateProductCardButton(productId);
+}
         // ==================== UPDATED: Add to Cart function with shop status check ====================
 function addToCart(productId) {
     // Check if the shop is accepting orders
@@ -3562,14 +3603,15 @@ function renderProducts(products) {
         `;
         
         // Reset total and disable place order button
-        if (document.getElementById('orderTotal')) {
-            document.getElementById('orderTotal').textContent = '₹0';
-        }
-        if (document.getElementById('qrAmount')) {
-            document.getElementById('qrAmount').textContent = '₹0';
-        }
-        if (document.getElementById('placeOrderBtn')) {
-            document.getElementById('placeOrderBtn').disabled = true;
+        const orderTotal = document.getElementById('orderTotal');
+        const qrAmount = document.getElementById('qrAmount');
+        const placeOrderBtn = document.getElementById('placeOrderBtn');
+        
+        if (orderTotal) orderTotal.textContent = '₹0';
+        if (qrAmount) qrAmount.textContent = '₹0';
+        if (placeOrderBtn) {
+            placeOrderBtn.disabled = true;
+            placeOrderBtn.innerHTML = '<i class="fas fa-lock"></i> Place Order Securely';
         }
         
         return;
@@ -3629,9 +3671,9 @@ function renderProducts(products) {
     const placeOrderBtn = document.getElementById('placeOrderBtn');
     if (placeOrderBtn) {
         placeOrderBtn.disabled = cart.length === 0;
+        placeOrderBtn.innerHTML = '<i class="fas fa-lock"></i> Place Order Securely';
     }
 }
-
         async function setupFirebaseMessaging() {
             if (!messaging) {
                 console.log('Firebase Messaging not available');
